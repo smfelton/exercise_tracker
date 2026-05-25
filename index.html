@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Exercise Tracker</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div class="app-shell">
+    <header class="app-header">
+      <div>
+        <p class="app-label">Workout</p>
+        <h1>Exercise Tracker</h1>
+        <p class="app-subtitle">Record and review your workouts</p>
+      </div>
+      <button class="secondary" id="records-btn" type="button">Records</button>
+    </header>
+
+    <div id="main-view">
+    <main>
+      <div class="main-col">
+
+        <!-- Exercise Selection -->
+        <div class="panel" id="selection-panel">
+          <h2>Exercise</h2>
+          <div class="select-row">
+            <select id="exercise-select">
+              <option value="">Select exercise</option>
+            </select>
+            <button class="secondary" id="new-exercise-btn" type="button">New Exercise</button>
+          </div>
+
+          <div id="new-exercise-row" hidden>
+            <div class="row">
+              <label for="new-exercise-name">Exercise</label>
+              <input type="text" id="new-exercise-name" placeholder="Exercise name">
+            </div>
+            <div class="row">
+              <label for="new-exercise-group">Exercise Group</label>
+              <select id="new-exercise-group">
+                <option value="Upper Push">Upper Push</option>
+                <option value="Upper Pull">Upper Pull</option>
+                <option value="Legs">Legs</option>
+                <option value="Core">Core</option>
+              </select>
+            </div>
+            <div class="row switch-row">
+              <input type="checkbox" id="new-exercise-duration">
+              <label for="new-exercise-duration">Duration-based</label>
+            </div>
+            <button class="primary" id="save-exercise-btn" type="button">Save</button>
+          </div>
+        </div>
+
+        <!-- Entry Form (hidden until exercise selected) -->
+        <div class="panel" id="entry-panel" hidden>
+          <h2>Log Entry</h2>
+          <div class="row">
+            <label for="entry-date">Date</label>
+            <input type="date" id="entry-date">
+          </div>
+          <div class="sets-container">
+            <div class="sets-header">
+              <strong>Sets</strong>
+              <button class="secondary" id="add-set-btn" type="button">+ Add set</button>
+            </div>
+            <div id="sets-list"></div>
+          </div>
+          <div class="buttons-row">
+            <button class="primary" id="save-entry-btn" type="button">Save entry</button>
+            <button class="secondary" id="clear-btn" type="button">Clear</button>
+          </div>
+        </div>
+
+        <!-- Current Session -->
+        <div class="panel" id="session-panel">
+          <h2>Current Session</h2>
+          <div id="session-content">
+            <p class="muted-text">No exercises logged today.</p>
+          </div>
+        </div>
+
+        <!-- Daily Summary -->
+        <div class="panel" id="summary-panel">
+          <h2>Daily Summary</h2>
+          <div id="summary-content">
+            <p class="muted-text">No entries recorded for today.</p>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- Past Performance -->
+      <div class="panel" id="history-panel">
+        <h2>Past Performance</h2>
+        <div id="history-content">
+          <p class="muted-text">Select an exercise to see recent history.</p>
+        </div>
+      </div>
+    </main>
+    </div>
+
+    <div id="records-view" hidden>
+      <div class="records-toolbar">
+        <button class="secondary" id="records-back-btn" type="button">← Back</button>
+        <h2 class="records-title">Records</h2>
+        <button class="secondary" id="export-json-btn" type="button">Export JSON</button>
+      </div>
+      <div id="records-content"></div>
+    </div>
+
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('./service-worker.js');
+    }
+  </script>
+  <script type="module" src="js/app.js"></script>
+</body>
+</html>
