@@ -45,6 +45,21 @@ db.version(1).stores({
   entries: '++id, exerciseId, date',
 });
 
+// Migrate entries to use exerciseName (string) instead of exerciseId (number)
+db.version(2).stores({
+  exercises: '++id, name, group, type',
+  entries: '++id, exerciseName, date',
+}).upgrade(async tx => {
+  const exercises = await tx.table('exercises').toArray();
+  const idToName = Object.fromEntries(exercises.map(e => [e.id, e.name]));
+  await tx.table('entries').toCollection().modify(entry => {
+    if (entry.exerciseId !== undefined) {
+      entry.exerciseName = idToName[entry.exerciseId] ?? null;
+      delete entry.exerciseId;
+    }
+  });
+});
+
 export async function initDb() {
   const existing = await db.exercises.toArray();
   const existingNames = new Set(existing.map(e => e.name));
@@ -84,8 +99,8 @@ export async function getAllEntries() {
   return await db.entries.toArray();
 }
 
-export async function getRecentEntriesForExercise(exerciseId, limit = 2) {
-  const all = await db.entries.where('exerciseId').equals(exerciseId).toArray();
+export async function getRecentEntriesForExercise(exerciseName, limit = 2) {
+  const all = await db.entries.where('exerciseName').equals(exerciseName).toArray();
   return all
     .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
     .slice(0, limit);
@@ -97,6 +112,50 @@ export async function updateEntry(id, data) {
 
 export async function deleteEntry(id) {
   await db.entries.delete(id);
+}
+
+export async function importData({ exercises: importedExercises = [], entries: importedEntries = [] }) {
+  const existing = await db.exercises.toArray();
+  const existingNames = new Set(existing.map(e => e.name));
+  let newExerciseCount = 0;
+
+  for (const ex of importedExercises) {
+    if (!existingNames.has(ex.name)) {
+      await db.exercises.add({ name: ex.name, group: ex.group, type: ex.type });
+      existingNames.add(ex.name);
+      newExerciseCount++;
+    }
+  }
+
+  const sorted = [...importedEntries].sort((a, b) =>
+    a.date.localeCompare(b.date) || a.orderPosition - b.orderPosition
+  );
+
+  const positionByDate = {};
+  let entryCount = 0;
+
+  for (const entry of sorted) {
+    // Support both new format (exerciseName) and old format (exerciseId + exercises array)
+    let exerciseName = entry.exerciseName;
+    if (!exerciseName && entry.exerciseId !== undefined) {
+      const match = importedExercises.find(e => e.id === entry.exerciseId);
+      exerciseName = match?.name;
+    }
+    if (!exerciseName || !existingNames.has(exerciseName)) continue;
+
+    if (positionByDate[entry.date] === undefined) {
+      positionByDate[entry.date] = (await db.entries.where('date').equals(entry.date).count()) + 1;
+    }
+    await db.entries.add({
+      exerciseName,
+      date: entry.date,
+      orderPosition: positionByDate[entry.date]++,
+      sets: entry.sets,
+    });
+    entryCount++;
+  }
+
+  return { newExerciseCount, entryCount };
 }
 
 export default db;

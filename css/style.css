@@ -281,6 +281,11 @@ button#add-set-button {
   margin-bottom: 20px;
 }
 
+.toolbar-actions {
+  display: flex;
+  gap: 8px;
+}
+
 .records-title {
   flex: 1;
   margin: 0;

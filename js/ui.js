@@ -16,7 +16,7 @@ export function renderExerciseDropdown(selectEl, exercises) {
     optgroup.label = group;
     for (const ex of exs) {
       const opt = document.createElement('option');
-      opt.value = ex.id;
+      opt.value = ex.name;
       opt.textContent = `${group} › ${ex.name}${ex.type === 'Duration' ? ' [duration]' : ''}`;
       optgroup.appendChild(opt);
     }
@@ -103,7 +103,7 @@ export function collectSets(container, exerciseType) {
 }
 
 export function renderHistory(container, entries, exercises) {
-  const exerciseMap = Object.fromEntries(exercises.map(e => [e.id, e]));
+  const exerciseMap = Object.fromEntries(exercises.map(e => [e.name, e]));
 
   if (!entries.length) {
     container.innerHTML = '<p class="muted-text">No history found for this exercise.</p>';
@@ -114,7 +114,7 @@ export function renderHistory(container, entries, exercises) {
   list.className = 'history-list';
 
   for (const entry of entries) {
-    const ex = exerciseMap[entry.exerciseId];
+    const ex = exerciseMap[entry.exerciseName];
     const card = document.createElement('div');
     card.className = 'history-card';
 
@@ -140,7 +140,7 @@ export function renderHistory(container, entries, exercises) {
 }
 
 export function renderSummary(container, entries, exercises) {
-  const exerciseMap = Object.fromEntries(exercises.map(e => [e.id, e]));
+  const exerciseMap = Object.fromEntries(exercises.map(e => [e.name, e]));
 
   if (!entries.length) {
     container.innerHTML = '<p class="muted-text">No entries recorded for today.</p>';
@@ -149,7 +149,7 @@ export function renderSummary(container, entries, exercises) {
 
   const groupTotals = {};
   for (const entry of entries) {
-    const ex = exerciseMap[entry.exerciseId];
+    const ex = exerciseMap[entry.exerciseName];
     if (!ex) continue;
     if (!groupTotals[ex.group]) groupTotals[ex.group] = { reps: 0, duration: 0 };
     for (const set of entry.sets) {
@@ -206,7 +206,7 @@ export function renderDateList(container, dates, onDateClick) {
 }
 
 export function renderDayDetail(container, entries, exercises, date, { onEdit, onDelete } = {}) {
-  const exerciseMap = Object.fromEntries(exercises.map(e => [e.id, e]));
+  const exerciseMap = Object.fromEntries(exercises.map(e => [e.name, e]));
   const sorted = [...entries].sort((a, b) => a.orderPosition - b.orderPosition);
 
   const heading = document.createElement('h3');
@@ -217,7 +217,7 @@ export function renderDayDetail(container, entries, exercises, date, { onEdit, o
   list.className = 'session-list';
 
   for (const entry of sorted) {
-    const ex = exerciseMap[entry.exerciseId];
+    const ex = exerciseMap[entry.exerciseName];
     const card = document.createElement('div');
     card.className = 'session-card';
 
@@ -255,7 +255,7 @@ export function renderDayDetail(container, entries, exercises, date, { onEdit, o
 }
 
 export function renderCurrentSession(container, entries, exercises, { onEdit, onDelete } = {}) {
-  const exerciseMap = Object.fromEntries(exercises.map(e => [e.id, e]));
+  const exerciseMap = Object.fromEntries(exercises.map(e => [e.name, e]));
 
   if (!entries.length) {
     container.innerHTML = '<p class="muted-text">No exercises logged today.</p>';
@@ -268,7 +268,7 @@ export function renderCurrentSession(container, entries, exercises, { onEdit, on
   list.className = 'session-list';
 
   for (const entry of sorted) {
-    const ex = exerciseMap[entry.exerciseId];
+    const ex = exerciseMap[entry.exerciseName];
     const card = document.createElement('div');
     card.className = 'session-card';
 

@@ -1,7 +1,7 @@
 import {
   initDb, getExercises, addExercise, addEntry, updateEntry, deleteEntry,
   getEntriesForDate, getEntryCountForDate, getRecentEntriesForExercise,
-  getAllEntryDates, getAllEntries,
+  getAllEntryDates, getAllEntries, importData,
 } from './db.js';
 import {
   renderExerciseDropdown, renderSets, addSetRow, removeSetRow,
@@ -9,41 +9,43 @@ import {
   renderDateList, renderDayDetail, showToast,
 } from './ui.js';
 
-const exerciseSelect  = document.getElementById('exercise-select');
-const newExerciseBtn  = document.getElementById('new-exercise-btn');
-const newExerciseRow  = document.getElementById('new-exercise-row');
-const newExerciseName = document.getElementById('new-exercise-name');
+const exerciseSelect   = document.getElementById('exercise-select');
+const newExerciseBtn   = document.getElementById('new-exercise-btn');
+const newExerciseRow   = document.getElementById('new-exercise-row');
+const newExerciseName  = document.getElementById('new-exercise-name');
 const newExerciseGroup = document.getElementById('new-exercise-group');
 const newExerciseDuration = document.getElementById('new-exercise-duration');
-const saveExerciseBtn = document.getElementById('save-exercise-btn');
+const saveExerciseBtn  = document.getElementById('save-exercise-btn');
 
-const entryPanel  = document.getElementById('entry-panel');
-const entryDate   = document.getElementById('entry-date');
-const setsListEl  = document.getElementById('sets-list');
-const addSetBtn   = document.getElementById('add-set-btn');
+const entryPanel   = document.getElementById('entry-panel');
+const entryDate    = document.getElementById('entry-date');
+const setsListEl   = document.getElementById('sets-list');
+const addSetBtn    = document.getElementById('add-set-btn');
 const saveEntryBtn = document.getElementById('save-entry-btn');
-const clearBtn    = document.getElementById('clear-btn');
+const clearBtn     = document.getElementById('clear-btn');
 
 const historyContent = document.getElementById('history-content');
 const summaryContent = document.getElementById('summary-content');
 const sessionContent = document.getElementById('session-content');
 
-const mainView      = document.getElementById('main-view');
-const recordsView   = document.getElementById('records-view');
+const mainView       = document.getElementById('main-view');
+const recordsView    = document.getElementById('records-view');
 const recordsContent = document.getElementById('records-content');
 const recordsBackBtn = document.getElementById('records-back-btn');
 const exportJsonBtn  = document.getElementById('export-json-btn');
+const importJsonBtn  = document.getElementById('import-json-btn');
+const importFileInput = document.getElementById('import-file-input');
 
 const editModal          = document.getElementById('edit-modal');
 const editExerciseSelect = document.getElementById('edit-exercise-select');
 const editEntryDateEl    = document.getElementById('edit-entry-date');
-const editSetsList     = document.getElementById('edit-sets-list');
-const editAddSetBtn    = document.getElementById('edit-add-set-btn');
-const editSaveBtn      = document.getElementById('edit-save-btn');
-const editCancelBtn    = document.getElementById('edit-cancel-btn');
-const confirmModal     = document.getElementById('confirm-modal');
-const confirmDeleteBtn = document.getElementById('confirm-delete-btn');
-const confirmCancelBtn = document.getElementById('confirm-cancel-btn');
+const editSetsList       = document.getElementById('edit-sets-list');
+const editAddSetBtn      = document.getElementById('edit-add-set-btn');
+const editSaveBtn        = document.getElementById('edit-save-btn');
+const editCancelBtn      = document.getElementById('edit-cancel-btn');
+const confirmModal       = document.getElementById('confirm-modal');
+const confirmDeleteBtn   = document.getElementById('confirm-delete-btn');
+const confirmCancelBtn   = document.getElementById('confirm-cancel-btn');
 
 let exercises = [];
 let selectedExercise = null;
@@ -84,11 +86,11 @@ async function refreshHistory() {
     historyContent.innerHTML = '<p class="muted-text">Select an exercise to see recent history.</p>';
     return;
   }
-  const entries = await getRecentEntriesForExercise(selectedExercise.id);
+  const entries = await getRecentEntriesForExercise(selectedExercise.name);
   renderHistory(historyContent, entries, exercises);
 }
 
-// ── Records view ────────────────────────────────────────────────────────────
+// ── Records view ──────────────────────────────────────────────────────────────
 
 async function openRecords() {
   mainView.hidden = true;
@@ -132,10 +134,41 @@ recordsBackBtn.addEventListener('click', async () => {
   }
 });
 
+// ── Import / Export ───────────────────────────────────────────────────────────
+
+importJsonBtn.addEventListener('click', () => importFileInput.click());
+
+importFileInput.addEventListener('change', async () => {
+  const file = importFileInput.files[0];
+  if (!file) return;
+  importFileInput.value = '';
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.entries || !Array.isArray(data.entries)) throw new Error('Invalid format');
+    const { newExerciseCount, entryCount } = await importData(data);
+    exercises = await getExercises();
+    renderExerciseDropdown(exerciseSelect, exercises);
+    await Promise.all([refreshSummary(), refreshCurrentSession()]);
+    if (recordsState === 'dates') {
+      const dates = await getAllEntryDates();
+      renderDateList(recordsContent, dates, showDayDetail);
+    }
+    showToast(`Imported ${entryCount} entries, ${newExerciseCount} new exercises.`);
+  } catch (e) {
+    showToast('Import failed — invalid JSON file.');
+    console.error(e);
+  }
+});
+
 exportJsonBtn.addEventListener('click', async () => {
   const [allEntries, allExercises] = await Promise.all([getAllEntries(), getExercises()]);
-  const data = { exercises: allExercises, entries: allEntries };
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const usedNames = new Set(allEntries.map(e => e.exerciseName));
+  const exercises = allExercises
+    .filter(e => usedNames.has(e.name))
+    .map(({ name, group, type }) => ({ name, group, type }));
+  const entries = allEntries.map(({ id, ...rest }) => rest);
+  const blob = new Blob([JSON.stringify({ exercises, entries }, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
@@ -144,7 +177,7 @@ exportJsonBtn.addEventListener('click', async () => {
   URL.revokeObjectURL(url);
 });
 
-// ── New exercise ─────────────────────────────────────────────────────────────
+// ── New exercise ──────────────────────────────────────────────────────────────
 
 newExerciseBtn.addEventListener('click', () => {
   newExerciseRow.hidden = !newExerciseRow.hidden;
@@ -158,7 +191,7 @@ saveExerciseBtn.addEventListener('click', async () => {
   }
 
   try {
-    const id = await addExercise({
+    await addExercise({
       name,
       group: newExerciseGroup.value,
       type: newExerciseDuration.checked ? 'Duration' : 'Reps',
@@ -166,7 +199,7 @@ saveExerciseBtn.addEventListener('click', async () => {
 
     exercises = await getExercises();
     renderExerciseDropdown(exerciseSelect, exercises);
-    exerciseSelect.value = String(id);
+    exerciseSelect.value = name;
     exerciseSelect.dispatchEvent(new Event('change'));
 
     newExerciseRow.hidden = true;
@@ -183,8 +216,8 @@ saveExerciseBtn.addEventListener('click', async () => {
 // ── Exercise selection ────────────────────────────────────────────────────────
 
 exerciseSelect.addEventListener('change', async () => {
-  const id = parseInt(exerciseSelect.value, 10);
-  selectedExercise = exercises.find(e => e.id === id) || null;
+  const name = exerciseSelect.value;
+  selectedExercise = exercises.find(e => e.name === name) || null;
 
   if (selectedExercise) {
     entryPanel.hidden = false;
@@ -231,7 +264,7 @@ saveEntryBtn.addEventListener('click', async () => {
 
   try {
     const orderPosition = (await getEntryCountForDate(date)) + 1;
-    await addEntry({ exerciseId: selectedExercise.id, date, orderPosition, sets });
+    await addEntry({ exerciseName: selectedExercise.name, date, orderPosition, sets });
     renderSets(setsListEl, selectedExercise.type);
     await Promise.all([refreshHistory(), refreshSummary(), refreshCurrentSession()]);
     showToast('Entry saved.');
@@ -250,12 +283,12 @@ clearBtn.addEventListener('click', () => {
 function handleEditEntry(id) {
   const entry = [...sessionEntries, ...detailEntries].find(e => e.id === id);
   if (!entry) return;
-  const exercise = exercises.find(e => e.id === entry.exerciseId);
+  const exercise = exercises.find(e => e.name === entry.exerciseName);
   editingEntry = entry;
   editExerciseType = exercise?.type || 'Reps';
 
   renderExerciseDropdown(editExerciseSelect, exercises);
-  editExerciseSelect.value = String(entry.exerciseId);
+  editExerciseSelect.value = entry.exerciseName;
 
   editEntryDateEl.value = entry.date;
   editSetsList.innerHTML = '';
@@ -271,8 +304,7 @@ function handleEditEntry(id) {
 }
 
 editExerciseSelect.addEventListener('change', () => {
-  const id = parseInt(editExerciseSelect.value, 10);
-  const ex = exercises.find(e => e.id === id);
+  const ex = exercises.find(e => e.name === editExerciseSelect.value);
   if (!ex) return;
   if (ex.type !== editExerciseType) {
     editExerciseType = ex.type;
@@ -306,8 +338,8 @@ editModal.addEventListener('click', e => {
 
 editSaveBtn.addEventListener('click', async () => {
   if (!editingEntry) return;
-  const exerciseId = parseInt(editExerciseSelect.value, 10);
-  const exercise = exercises.find(e => e.id === exerciseId);
+  const exerciseName = editExerciseSelect.value;
+  const exercise = exercises.find(e => e.name === exerciseName);
   const date = editEntryDateEl.value;
   if (!date) {
     showToast('Please select a date.');
@@ -320,7 +352,7 @@ editSaveBtn.addEventListener('click', async () => {
     return;
   }
   try {
-    await updateEntry(editingEntry.id, { exerciseId, date, sets });
+    await updateEntry(editingEntry.id, { exerciseName, date, sets });
     editModal.hidden = true;
     editingEntry = null;
     await Promise.all([refreshSummary(), refreshCurrentSession(), refreshHistory()]);
