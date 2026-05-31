@@ -199,7 +199,36 @@ At the bottom of the entry form, the daily summary displays:
 
 There should be a button labelled 'Records'. When clicked, it should open a new screen that has a list of every workout date. When a date is clicked, it displays every exercise performed that day, along with orderPosition, weight, and reps/duration.
 
+Each exercise entry in the expanded date view should have an **Edit** button and a **Delete** button.
+
 There should also be an 'export to json' button that saves the data
+
+## Edit Entry
+
+Clicking **Edit** on an exercise entry opens an edit form pre-populated with the entry's existing data:
+
+- **Exercise** — shown as read-only text (the exercise cannot be changed on an existing entry)
+- **Date picker** — pre-filled with the entry's date
+- **Set fields** — one row per existing set, pre-filled with that set's reps/time and weight values, following the same reps-based/duration-based rules as the Entry Form
+- **Remove set** button per set; **Add set** button to append a new set
+- **Save changes** button — validates and overwrites the entry in the database
+- **Cancel** button — discards changes and closes the edit form without saving
+
+### Edit Validation
+
+Validation rules are identical to Entry Submission:
+
+- At least one set must have a reps value (reps-based) or a time value (duration-based)
+- A single set cannot have both reps and time values
+- On successful save, a toast shows "Entry updated.", the edit form closes, and the Records view refreshes to reflect the change
+
+### Delete Entry
+
+Clicking **Delete** on an exercise entry shows a confirmation prompt ("Delete this entry?"). On confirmation, the entry is permanently removed and the Records view refreshes. The daily totals on the main screen also refresh if the deleted entry's date matches the currently selected date.
+
+### Editing from Current Session
+
+The **Current Session** section (today's entries) should also show an **Edit** and a **Delete** button for each exercise entry, using the same Edit Entry flow described above.
 
 
 # Acceptance Criteria
@@ -208,3 +237,6 @@ There should also be an 'export to json' button that saves the data
 - When a user selects an exercise, the app displays the most recent past session for that exercise.
 - When a user views a daily group summary, the app displays the total reps for that group on that day.
 - The app supports both reps-based and time-based sets, and does not require both values for a single set.
+- When a user edits an existing entry, the updated sets and date are persisted and the UI reflects the change immediately.
+- When a user deletes an entry, it is permanently removed from the database and the UI refreshes.
+- Edit and delete actions are available from both the Records view and the Current Session section.

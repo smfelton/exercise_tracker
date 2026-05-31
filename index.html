@@ -115,6 +115,43 @@
 
   <div class="toast" id="toast"></div>
 
+  <!-- Edit Entry Modal -->
+  <div id="edit-modal" class="modal-overlay" hidden>
+    <div class="modal-panel">
+      <h2>Edit Entry</h2>
+      <div class="row">
+        <label for="edit-exercise-select">Exercise</label>
+        <select id="edit-exercise-select"></select>
+      </div>
+      <div class="row">
+        <label for="edit-entry-date">Date</label>
+        <input type="date" id="edit-entry-date">
+      </div>
+      <div class="sets-container">
+        <div class="sets-header">
+          <strong>Sets</strong>
+          <button class="secondary" id="edit-add-set-btn" type="button">+ Add set</button>
+        </div>
+        <div id="edit-sets-list"></div>
+      </div>
+      <div class="buttons-row">
+        <button class="primary" id="edit-save-btn" type="button">Save changes</button>
+        <button class="secondary" id="edit-cancel-btn" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirm Modal -->
+  <div id="confirm-modal" class="modal-overlay" hidden>
+    <div class="modal-panel confirm-panel">
+      <p>Delete this entry?</p>
+      <div class="buttons-row">
+        <button class="danger" id="confirm-delete-btn" type="button">Delete</button>
+        <button class="secondary" id="confirm-cancel-btn" type="button">Cancel</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('./service-worker.js');

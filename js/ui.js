@@ -205,7 +205,7 @@ export function renderDateList(container, dates, onDateClick) {
   container.appendChild(list);
 }
 
-export function renderDayDetail(container, entries, exercises, date) {
+export function renderDayDetail(container, entries, exercises, date, { onEdit, onDelete } = {}) {
   const exerciseMap = Object.fromEntries(exercises.map(e => [e.id, e]));
   const sorted = [...entries].sort((a, b) => a.orderPosition - b.orderPosition);
 
@@ -233,17 +233,28 @@ export function renderDayDetail(container, entries, exercises, date) {
       <p class="entry-meta">Position ${entry.orderPosition}</p>
       <h3>${ex ? ex.name : 'Unknown exercise'}</h3>
       <div class="session-sets">${setRows}</div>
+      <div class="card-actions">
+        <button class="secondary edit-entry-btn" data-id="${entry.id}">Edit</button>
+        <button class="danger delete-entry-btn" data-id="${entry.id}">Delete</button>
+      </div>
     `;
 
     list.appendChild(card);
   }
+
+  list.addEventListener('click', e => {
+    const editBtn = e.target.closest('.edit-entry-btn');
+    if (editBtn && onEdit) { onEdit(parseInt(editBtn.dataset.id, 10)); return; }
+    const deleteBtn = e.target.closest('.delete-entry-btn');
+    if (deleteBtn && onDelete) { onDelete(parseInt(deleteBtn.dataset.id, 10)); }
+  });
 
   container.innerHTML = '';
   container.appendChild(heading);
   container.appendChild(list);
 }
 
-export function renderCurrentSession(container, entries, exercises) {
+export function renderCurrentSession(container, entries, exercises, { onEdit, onDelete } = {}) {
   const exerciseMap = Object.fromEntries(exercises.map(e => [e.id, e]));
 
   if (!entries.length) {
@@ -272,10 +283,21 @@ export function renderCurrentSession(container, entries, exercises) {
     card.innerHTML = `
       <h3>${ex ? ex.name : 'Unknown exercise'}</h3>
       <div class="session-sets">${setRows}</div>
+      <div class="card-actions">
+        <button class="secondary edit-entry-btn" data-id="${entry.id}">Edit</button>
+        <button class="danger delete-entry-btn" data-id="${entry.id}">Delete</button>
+      </div>
     `;
 
     list.appendChild(card);
   }
+
+  list.addEventListener('click', e => {
+    const editBtn = e.target.closest('.edit-entry-btn');
+    if (editBtn && onEdit) { onEdit(parseInt(editBtn.dataset.id, 10)); return; }
+    const deleteBtn = e.target.closest('.delete-entry-btn');
+    if (deleteBtn && onDelete) { onDelete(parseInt(deleteBtn.dataset.id, 10)); }
+  });
 
   container.innerHTML = '';
   container.appendChild(list);

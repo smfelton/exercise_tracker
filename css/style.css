@@ -330,6 +330,62 @@ button#add-set-button {
   opacity: 1;
 }
 
+button.danger {
+  background: #dc2626;
+  color: white;
+}
+
+.card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.card-actions button {
+  font-size: 0.85rem;
+  padding: 6px 12px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 24px;
+}
+
+.modal-overlay[hidden] {
+  display: none;
+}
+
+.modal-panel {
+  background: var(--surface);
+  border-radius: var(--radius);
+  box-shadow: 0 24px 60px rgba(15, 23, 42, 0.18);
+  padding: 24px;
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.modal-panel h2 {
+  margin-top: 0;
+}
+
+.confirm-panel {
+  max-width: 320px;
+}
+
+.confirm-panel p {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 20px;
+}
+
 @media (min-width: 900px) {
   main {
     grid-template-columns: 1.45fr 1fr;

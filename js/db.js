@@ -6,14 +6,20 @@ const SEED_EXERCISES = [
   { name: 'Dumbbell press', group: 'Upper Push', type: 'Reps' },
   { name: 'Dumbbell incline press', group: 'Upper Push', type: 'Reps' },
   { name: 'Dumbbell incline fly', group: 'Upper Push', type: 'Reps' },
+  { name: 'Dumbbell shoulder fly', group: 'Upper Push', type: 'Reps' },
   { name: 'Tricep extension, machine', group: 'Upper Push', type: 'Reps' },
   { name: 'Tricep extension, down, with straight handle', group: 'Upper Push', type: 'Reps' },
   { name: 'Tricep extension, down, with rope', group: 'Upper Push', type: 'Reps' },
+  { name: 'Tricep extension, up, with rope', group: 'Upper Push', type: 'Reps' },
+  { name: 'Pushup', group: 'Upper Push', type: 'Reps' },
   { name: 'Lateral pull-down, wide-grip', group: 'Upper Pull', type: 'Reps' },
   { name: 'Cable row, close grip', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Cable row, wide grip', group: 'Upper Pull', type: 'Reps' },
   { name: 'Barbell bicep curl', group: 'Upper Pull', type: 'Reps' },
   { name: 'Dumbbell bicep curl', group: 'Upper Pull', type: 'Reps' },
   { name: 'Machine bicep curl', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Rear deltoid machine', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Face pull, with rope', group: 'Upper Pull', type: 'Reps' },
   { name: 'Leg press', group: 'Legs', type: 'Reps' },
   { name: 'Single-leg leg press', group: 'Legs', type: 'Reps' },
   { name: 'Calf press', group: 'Legs', type: 'Reps' },
@@ -40,9 +46,11 @@ db.version(1).stores({
 });
 
 export async function initDb() {
-  const count = await db.exercises.count();
-  if (count === 0) {
-    await db.exercises.bulkAdd(SEED_EXERCISES);
+  const existing = await db.exercises.toArray();
+  const existingNames = new Set(existing.map(e => e.name));
+  const toAdd = SEED_EXERCISES.filter(e => !existingNames.has(e.name));
+  if (toAdd.length) {
+    await db.exercises.bulkAdd(toAdd);
   }
 }
 
@@ -81,6 +89,14 @@ export async function getRecentEntriesForExercise(exerciseId, limit = 2) {
   return all
     .sort((a, b) => b.date.localeCompare(a.date) || b.id - a.id)
     .slice(0, limit);
+}
+
+export async function updateEntry(id, data) {
+  await db.entries.update(id, data);
+}
+
+export async function deleteEntry(id) {
+  await db.entries.delete(id);
 }
 
 export default db;
