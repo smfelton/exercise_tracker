@@ -4,14 +4,14 @@ This file provides guidance to Claude Code when working with this project.
 
 ## Project Overview
 
-This is a **Progressive Web App (PWA)** built with vanilla JavaScript. It runs entirely in the browser with no backend — data is stored locally on the device using IndexedDB via Dexie.js.
+This is a **Progressive Web App (PWA)** built with vanilla JavaScript. It runs entirely in the browser with no backend — data is stored locally on the device using IndexedDB via Dexie.js. Specifically, it will be used from an iPhone, SE 2020 model.
 
 ## Tech Stack
 
 - **Frontend:** Vanilla HTML, CSS, JavaScript (no framework)
 - **Database:** IndexedDB via [Dexie.js](https://dexie.org/)
 - **PWA:** Web App Manifest + Service Worker
-- **Hosting:** Static file hosting (e.g. GitHub Pages, Netlify, Cloudflare Pages)
+- **Hosting:** Static file hosting with GitHub Pages
 
 ## Project Structure
 
