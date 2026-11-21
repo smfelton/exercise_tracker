@@ -1,9 +1,17 @@
-// Offline support: the app's files are cached so it opens at the gym without signal.
-// Strategy is "stale-while-revalidate": answer from the cache instantly, then fetch a
-// fresh copy in the background so the next launch picks up any update.
+// Offline support with fast updates.
+//
+// Strategy is "network first, cache fallback": every request goes to the site
+// first, so a launch with signal always gets the latest version. If there is no
+// signal, or the site takes longer than NETWORK_TIMEOUT_MS (weak gym signal),
+// the saved copy is used instead. Every successful response refreshes the cache.
+//
+// Requests use `cache: 'no-cache'` so the browser revalidates with the server
+// instead of reusing its own HTTP-cached copy (GitHub Pages allows 10 minutes).
+//
 // Bump CACHE_VERSION when the list of files below changes.
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const CACHE_NAME = `exercise-tracker-${CACHE_VERSION}`;
+const NETWORK_TIMEOUT_MS = 3000;
 
 const APP_FILES = [
   './',
@@ -22,7 +30,8 @@ const APP_FILES = [
 self.addEventListener('install', event => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(APP_FILES))
+      // 'reload' skips the browser's HTTP cache so the fresh files are saved.
+      .then(cache => cache.addAll(APP_FILES.map(url => new Request(url, { cache: 'reload' }))))
       .then(() => self.skipWaiting())
   );
 });
@@ -38,24 +47,33 @@ self.addEventListener('activate', event => {
   );
 });
 
+function timeout(ms) {
+  return new Promise(resolve => setTimeout(() => resolve(undefined), ms));
+}
+
 self.addEventListener('fetch', event => {
   const { request } = event;
   if (request.method !== 'GET' || new URL(request.url).origin !== self.location.origin) return;
 
   event.respondWith((async () => {
     const cache = await caches.open(CACHE_NAME);
-    const cached = await cache.match(request, { ignoreSearch: true });
-    const network = fetch(request)
+
+    const network = fetch(request, { cache: 'no-cache' })
       .then(response => {
         if (response.ok) cache.put(request, response.clone());
         return response;
       })
       .catch(() => undefined);
+    // Let a slow download finish and refresh the cache even if we stop waiting.
+    event.waitUntil(network);
 
-    if (cached) {
-      event.waitUntil(network);
-      return cached;
-    }
+    const fresh = await Promise.race([network, timeout(NETWORK_TIMEOUT_MS)]);
+    if (fresh) return fresh;
+
+    const cached = await cache.match(request, { ignoreSearch: true });
+    if (cached) return cached;
+
+    // Nothing saved yet: keep waiting for the network as a last resort.
     return (await network) || Response.error();
   })());
 });

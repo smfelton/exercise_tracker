@@ -76,11 +76,11 @@ export default db;
 
 ## Service Worker
 
-The app must open offline (the gym may have no signal), so `service-worker.js` caches the app's files with a stale-while-revalidate strategy:
+The app must open offline (the gym may have no signal), so `service-worker.js` caches the app's files with a network-first strategy: it tries the site first (bypassing the browser's HTTP cache) and falls back to the saved copy when offline or after a 3-second timeout:
 
 - Every file the app needs is listed in `APP_FILES`. When you add, rename or remove a file, update that list **and** bump `CACHE_VERSION`.
 - Dexie is vendored at `js/vendor/dexie.mjs` — do not import libraries from a CDN, since they would not be available offline.
-- After an update is pushed, the phone shows the old version on the next launch and the new one on the launch after that.
+- After an update is pushed, the next launch with signal shows it. On iPhone the app must be fully closed (swiped away) and reopened; switching back to it only resumes the old page.
 
 ## iPhone specifics
 
