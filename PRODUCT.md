@@ -12,7 +12,8 @@ A fixed set of groups that represent general body areas:
 - Upper Push
 - Upper Pull
 - Legs
-- Core
+- Front core
+- Back core
 
 ## Set
 One unit of work for an exercise. A set is either:
@@ -40,7 +41,7 @@ The sequence in which an exercise entry was performed on a given day. This is a 
 
 - `Exercise`
   - `name`
-  - `group` (one of Upper Push, Upper Pull, Legs, Core)
+  - `group` (one of Upper Push, Upper Pull, Legs, Front core, Back core)
   - `type` (one of Reps or Duration)
 
 - `ExerciseEntry`
@@ -87,7 +88,7 @@ Constraints:
 
 # Examples
 
-### Lat pull-down, wide-grip
+### Lat pulldown, wide grip
 - Group: Upper Pull
 - Date: 2026-05-24
 - Order position: 1
@@ -105,7 +106,7 @@ Constraints:
   2. 12 reps, 0 lbs
 
 ### Plank
-- Group: Core
+- Group: Front core
 - Date: 2026-05-23
 - Order position: 1
 - Sets:
@@ -136,7 +137,7 @@ The app has six main sections:
 Clicking "New Exercise" reveals a form with:
 
 - Text input field labeled "Exercise" for the exercise name
-- Dropdown labeled "Exercise Group" with options: Upper Push, Upper Pull, Legs, Core
+- Dropdown labeled "Exercise Group" with options: Upper Push, Upper Pull, Legs, Front core, Back core
 - Checkbox labeled "duration" — if checked, the exercise will be saved as time-based; otherwise, reps-based
 - "Save" button to create the exercise
 - On save, the form hides, the new exercise appears in the dropdown, and a toast confirms "Exercise added."

@@ -1,4 +1,4 @@
-const GROUPS = ['Upper Push', 'Upper Pull', 'Legs', 'Core'];
+const GROUPS = ['Upper Push', 'Upper Pull', 'Legs', 'Front core', 'Back core'];
 
 // Escape any value before it goes into an innerHTML template, so names or
 // imported data containing <, & or quotes display as text and never run as code.

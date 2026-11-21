@@ -2,43 +2,126 @@
 // unexpected major version from a CDN.
 import Dexie from './vendor/dexie.mjs';
 
+// Naming convention: "Movement, qualifier, qualifier" in sentence case.
+// Qualifiers go in the order equipment, attachment/grip, other. Equipment is
+// only named when the movement is done with more than one kind. See EXERCISES.md.
 const SEED_EXERCISES = [
-  { name: 'Dips', group: 'Upper Push', type: 'Reps' },
-  { name: 'Dumbbell bench press', group: 'Upper Push', type: 'Reps' },
-  { name: 'Dumbbell press', group: 'Upper Push', type: 'Reps' },
-  { name: 'Dumbbell incline press', group: 'Upper Push', type: 'Reps' },
-  { name: 'Dumbbell incline fly', group: 'Upper Push', type: 'Reps' },
-  { name: 'Dumbbell shoulder fly', group: 'Upper Push', type: 'Reps' },
-  { name: 'Tricep extension, machine', group: 'Upper Push', type: 'Reps' },
-  { name: 'Tricep extension, down, with straight handle', group: 'Upper Push', type: 'Reps' },
-  { name: 'Tricep extension, down, with rope', group: 'Upper Push', type: 'Reps' },
-  { name: 'Tricep extension, up, with rope', group: 'Upper Push', type: 'Reps' },
+  { name: 'Bench press, barbell', group: 'Upper Push', type: 'Reps' },
+  { name: 'Bench press, dumbbell', group: 'Upper Push', type: 'Reps' },
+  { name: 'Incline bench press, barbell', group: 'Upper Push', type: 'Reps' },
+  { name: 'Incline bench press, dumbbell', group: 'Upper Push', type: 'Reps' },
+  { name: 'Incline fly, dumbbell', group: 'Upper Push', type: 'Reps' },
+  { name: 'Chest press', group: 'Upper Push', type: 'Reps' },
+  { name: 'Chest fly, cable', group: 'Upper Push', type: 'Reps' },
+  { name: 'Overhead press, barbell', group: 'Upper Push', type: 'Reps' },
+  { name: 'Overhead press, dumbbell', group: 'Upper Push', type: 'Reps' },
+  { name: 'Lateral raise, dumbbell', group: 'Upper Push', type: 'Reps' },
+  { name: 'Dip', group: 'Upper Push', type: 'Reps' },
   { name: 'Pushup', group: 'Upper Push', type: 'Reps' },
-  { name: 'Lateral pull-down, wide-grip', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Pushup, clap', group: 'Upper Push', type: 'Reps' },
+  { name: 'Triceps extension, machine', group: 'Upper Push', type: 'Reps' },
+  { name: 'Triceps overhead extension, rope', group: 'Upper Push', type: 'Reps' },
+  { name: 'Triceps pushdown, rope', group: 'Upper Push', type: 'Reps' },
+  { name: 'Triceps pushdown, straight bar', group: 'Upper Push', type: 'Reps' },
+  { name: 'Lat pulldown, wide grip', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Lat pulldown, close grip', group: 'Upper Pull', type: 'Reps' },
   { name: 'Cable row, close grip', group: 'Upper Pull', type: 'Reps' },
   { name: 'Cable row, wide grip', group: 'Upper Pull', type: 'Reps' },
-  { name: 'Barbell bicep curl', group: 'Upper Pull', type: 'Reps' },
-  { name: 'Dumbbell bicep curl', group: 'Upper Pull', type: 'Reps' },
-  { name: 'Machine bicep curl', group: 'Upper Pull', type: 'Reps' },
-  { name: 'Rear deltoid machine', group: 'Upper Pull', type: 'Reps' },
-  { name: 'Face pull, with rope', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Cable row, separate grips', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Biceps curl, barbell', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Biceps curl, dumbbell', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Biceps curl, machine', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Face pull, rope', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Face pull, separate grips', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Reverse fly, machine', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Chin-up', group: 'Upper Pull', type: 'Reps' },
+  { name: 'Squat, barbell', group: 'Legs', type: 'Reps' },
+  { name: 'Squat, goblet', group: 'Legs', type: 'Reps' },
+  { name: 'Squat, Bulgarian split', group: 'Legs', type: 'Reps' },
   { name: 'Leg press', group: 'Legs', type: 'Reps' },
-  { name: 'Single-leg leg press', group: 'Legs', type: 'Reps' },
+  { name: 'Leg press, single-leg', group: 'Legs', type: 'Reps' },
   { name: 'Calf press', group: 'Legs', type: 'Reps' },
-  { name: 'Single-leg calf press', group: 'Legs', type: 'Reps' },
-  { name: 'Seated calf raise', group: 'Legs', type: 'Reps' },
-  { name: 'Standing calf raise', group: 'Legs', type: 'Reps' },
+  { name: 'Calf press, single-leg', group: 'Legs', type: 'Reps' },
+  { name: 'Calf raise, seated', group: 'Legs', type: 'Reps' },
+  { name: 'Calf raise, standing', group: 'Legs', type: 'Reps' },
+  { name: 'Hip abduction', group: 'Legs', type: 'Reps' },
+  { name: 'Hip adduction', group: 'Legs', type: 'Reps' },
   { name: 'Ankle cable', group: 'Legs', type: 'Reps' },
-  { name: 'Abduction machine', group: 'Legs', type: 'Reps' },
-  { name: 'Adduction machine', group: 'Legs', type: 'Reps' },
-  { name: 'Torso rotation', group: 'Core', type: 'Reps' },
-  { name: 'Roman chair', group: 'Core', type: 'Reps' },
-  { name: 'Roman hold', group: 'Core', type: 'Duration' },
-  { name: 'Back extension machine', group: 'Core', type: 'Reps' },
-  { name: 'Spine lift, dumbbell', group: 'Core', type: 'Reps' },
-  { name: 'Plank', group: 'Core', type: 'Duration' },
-  { name: 'Side plank', group: 'Core', type: 'Duration' },
+  { name: 'Ab crunch, machine', group: 'Front core', type: 'Reps' },
+  { name: 'Leg raise, bent knee', group: 'Front core', type: 'Reps' },
+  { name: 'Leg raise, straight', group: 'Front core', type: 'Reps' },
+  { name: 'Plank', group: 'Front core', type: 'Duration' },
+  { name: 'Plank, side', group: 'Front core', type: 'Duration' },
+  { name: 'Torso rotation, machine', group: 'Front core', type: 'Reps' },
+  { name: 'Back extension, machine', group: 'Back core', type: 'Reps' },
+  { name: 'Back extension, Roman chair', group: 'Back core', type: 'Reps' },
+  { name: 'Back extension hold, Roman chair', group: 'Back core', type: 'Duration' },
+  { name: 'Spine lift, dumbbell', group: 'Back core', type: 'Reps' },
 ];
+
+// Old name -> new name, from the naming cleanup. Used by the version 4 database
+// upgrade and when importing backups made before it. Never remove entries:
+// old backup files may still use these names.
+const RENAMES = {
+  'Bench press': 'Bench press, barbell',
+  'Dumbbell bench press': 'Bench press, dumbbell',
+  'Inclined bench press': 'Incline bench press, barbell',
+  'Dumbbell incline press': 'Incline bench press, dumbbell',
+  'Dumbbell incline fly': 'Incline fly, dumbbell',
+  'Chest press, machine': 'Chest press',
+  'Cable chest': 'Chest fly, cable',
+  'Press': 'Overhead press, barbell',
+  'Dumbbell press': 'Overhead press, dumbbell',
+  'Dumbbell shoulder fly': 'Lateral raise, dumbbell',
+  'Dips': 'Dip',
+  'Tricep extension, machine': 'Triceps extension, machine',
+  'Tricep extension, up, with rope': 'Triceps overhead extension, rope',
+  'Tricep extension, down, with rope': 'Triceps pushdown, rope',
+  'Tricep extension, down, with straight handle': 'Triceps pushdown, straight bar',
+  'Lateral pull-down, wide-grip': 'Lat pulldown, wide grip',
+  'Pull-down, close grip': 'Lat pulldown, close grip',
+  'Barbell bicep curl': 'Biceps curl, barbell',
+  'Dumbbell bicep curl': 'Biceps curl, dumbbell',
+  'Machine bicep curl': 'Biceps curl, machine',
+  'Face pull, with rope': 'Face pull, rope',
+  'Face Pull, separate grips': 'Face pull, separate grips',
+  'Rear deltoid machine': 'Reverse fly, machine',
+  'Squat': 'Squat, barbell',
+  'Goblet squat': 'Squat, goblet',
+  'Bulgarian split squat': 'Squat, Bulgarian split',
+  'Single-leg leg press': 'Leg press, single-leg',
+  'Single-leg calf press': 'Calf press, single-leg',
+  'Seated calf raise': 'Calf raise, seated',
+  'Standing calf raise': 'Calf raise, standing',
+  'Abduction machine': 'Hip abduction',
+  'Adduction machine': 'Hip adduction',
+  'Ab crunch machine': 'Ab crunch, machine',
+  'Knee raise': 'Leg raise, bent knee',
+  'Straight leg raise - from elbows': 'Leg raise, straight',
+  'Side plank': 'Plank, side',
+  'Torso rotation': 'Torso rotation, machine',
+  'Back extension machine': 'Back extension, machine',
+  'Roman chair': 'Back extension, Roman chair',
+  'Roman hold': 'Back extension hold, Roman chair',
+};
+
+function currentName(name) {
+  return RENAMES[name] ?? name;
+}
+
+// Seed-list entry for a name, old or new.
+function seedFor(name) {
+  const wanted = currentName(name);
+  return SEED_EXERCISES.find(s => s.name === wanted);
+}
+
+const GROUPS = ['Upper Push', 'Upper Pull', 'Legs', 'Front core', 'Back core'];
+
+// The old single 'Core' group was split in two. Exercises from the seed list go
+// where the list puts them; any other (user-added) Core exercise goes to Front core.
+function splitCoreGroup(name) {
+  return seedFor(name)?.group ?? 'Front core';
+}
 
 const db = new Dexie('ExerciseTrackerDB');
 
@@ -60,6 +143,60 @@ db.version(2).stores({
       delete entry.exerciseId;
     }
   });
+});
+
+// Split the 'Core' group into 'Front core' and 'Back core', and remove duplicate
+// exercise records left over from before duplicate names were blocked.
+// Entries reference exercises by name, so only the exercises table changes and
+// no logged workouts are touched.
+db.version(3).stores({
+  exercises: '++id, name, group, type',
+  entries: '++id, exerciseName, date',
+}).upgrade(async tx => {
+  const table = tx.table('exercises');
+  await table.where('group').equals('Core').modify(ex => {
+    ex.group = splitCoreGroup(ex.name);
+  });
+
+  // For a duplicated name, keep the record whose group matches the seed list
+  // (or the oldest one if none does) and delete the rest.
+  const byName = {};
+  for (const ex of await table.toArray()) (byName[ex.name] ||= []).push(ex);
+  const extraIds = [];
+  for (const [name, copies] of Object.entries(byName)) {
+    if (copies.length < 2) continue;
+    const seedGroup = seedFor(name)?.group;
+    const keep = copies.find(c => c.group === seedGroup) ?? copies.sort((a, b) => a.id - b.id)[0];
+    extraIds.push(...copies.filter(c => c !== keep).map(c => c.id));
+  }
+  await table.bulkDelete(extraIds);
+});
+
+// Rename exercises to the standard naming convention (see RENAMES), in both the
+// exercises table and every logged entry, so history stays attached.
+db.version(4).stores({
+  exercises: '++id, name, group, type',
+  entries: '++id, exerciseName, date',
+}).upgrade(async tx => {
+  const exercises = tx.table('exercises');
+  const existingNames = new Set((await exercises.toArray()).map(e => e.name));
+  const extraIds = [];
+  await exercises.toCollection().modify(ex => {
+    const newName = RENAMES[ex.name];
+    if (!newName) return;
+    if (existingNames.has(newName)) {
+      // Someone already added an exercise with the new name: keep that one.
+      extraIds.push(ex.id);
+      return;
+    }
+    existingNames.add(newName);
+    ex.name = newName;
+  });
+  await exercises.bulkDelete(extraIds);
+
+  await tx.table('entries')
+    .where('exerciseName').anyOf(Object.keys(RENAMES))
+    .modify(entry => { entry.exerciseName = RENAMES[entry.exerciseName]; });
 });
 
 export async function initDb() {
@@ -137,8 +274,14 @@ export async function deleteEntry(id) {
 }
 
 const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const GROUPS = ['Upper Push', 'Upper Pull', 'Legs', 'Core'];
 const TYPES = ['Reps', 'Duration'];
+
+// Accept backups made before the Core split. `name` is the already-renamed name.
+function importedGroup(ex, name) {
+  if (GROUPS.includes(ex.group)) return ex.group;
+  if (ex.group === 'Core') return splitCoreGroup(name);
+  return 'Front core';
+}
 
 function toNumber(value) {
   const n = Number(value);
@@ -173,11 +316,12 @@ export async function importData({ exercises: importedExercises = [], entries: i
 
     const newExercises = [];
     for (const ex of importedExercises) {
-      const name = typeof ex?.name === 'string' ? ex.name.trim() : '';
+      // Backups made before the naming cleanup use old names; translate them.
+      const name = typeof ex?.name === 'string' ? currentName(ex.name.trim()) : '';
       if (!name || lowerNames.has(name.toLowerCase())) continue;
       newExercises.push({
         name,
-        group: GROUPS.includes(ex.group) ? ex.group : 'Core',
+        group: importedGroup(ex, name),
         type: TYPES.includes(ex.type) ? ex.type : 'Reps',
       });
       existingNames.add(name);
@@ -203,6 +347,7 @@ export async function importData({ exercises: importedExercises = [], entries: i
       if (!exerciseName && entry.exerciseId !== undefined) {
         exerciseName = importedExercises.find(e => e.id === entry.exerciseId)?.name;
       }
+      if (typeof exerciseName === 'string') exerciseName = currentName(exerciseName.trim());
       if (!exerciseName || !existingNames.has(exerciseName)) continue;
 
       const sets = cleanSets(entry.sets);
