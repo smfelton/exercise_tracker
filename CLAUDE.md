@@ -25,7 +25,9 @@ This is a **Progressive Web App (PWA)** built with vanilla JavaScript. It runs e
 ├── js/
 │   ├── app.js          # Main app logic
 │   ├── db.js           # Dexie.js database setup and queries
-│   └── ui.js           # DOM manipulation and rendering
+│   ├── ui.js           # DOM manipulation and rendering
+│   └── vendor/
+│       └── dexie.mjs   # Pinned copy of Dexie.js
 └── icons/              # PWA icons (various sizes)
 ```
 
@@ -47,7 +49,7 @@ All database setup lives in `js/db.js`. When adding new tables or fields:
 Example pattern:
 ```javascript
 // js/db.js
-import Dexie from 'https://cdn.jsdelivr.net/npm/dexie/dist/dexie.mjs';
+import Dexie from './vendor/dexie.mjs'; // vendored, pinned copy (Dexie 4.0.11)
 
 const db = new Dexie('appdb');
 
@@ -74,13 +76,17 @@ export default db;
 
 ## Service Worker
 
-Keep the service worker minimal unless offline support is explicitly needed:
+The app must open offline (the gym may have no signal), so `service-worker.js` caches the app's files with a stale-while-revalidate strategy:
 
-```javascript
-// service-worker.js — minimal version, satisfies PWA requirements
-self.addEventListener('install', () => self.skipWaiting());
-self.addEventListener('activate', () => self.clients.claim());
-```
+- Every file the app needs is listed in `APP_FILES`. When you add, rename or remove a file, update that list **and** bump `CACHE_VERSION`.
+- Dexie is vendored at `js/vendor/dexie.mjs` — do not import libraries from a CDN, since they would not be available offline.
+- After an update is pushed, the phone shows the old version on the next launch and the new one on the launch after that.
+
+## iPhone specifics
+
+- iOS ignores SVG manifest icons; the home-screen icon is `icons/apple-touch-icon.png` (180x180, square, no transparency).
+- Number inputs use `inputmode` (`numeric` / `decimal`) so the number pad appears.
+- Inputs must keep a font size of at least 16px, or iOS zooms in when they are focused.
 
 ## Style Guidelines
 

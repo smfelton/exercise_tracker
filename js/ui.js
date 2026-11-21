@@ -1,5 +1,16 @@
 const GROUPS = ['Upper Push', 'Upper Pull', 'Legs', 'Core'];
 
+// Escape any value before it goes into an innerHTML template, so names or
+// imported data containing <, & or quotes display as text and never run as code.
+function esc(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
 export function renderExerciseDropdown(selectEl, exercises) {
   const byGroup = {};
   for (const g of GROUPS) byGroup[g] = [];
@@ -31,20 +42,22 @@ function buildSetRow(index, exerciseType) {
 
   const primaryLabel = exerciseType === 'Reps' ? 'Reps' : 'Time (s)';
 
+  // inputmode brings up the number pad on iPhone instead of the full keyboard.
+  // Labels wrap their inputs so tapping a label focuses its field.
   div.innerHTML = `
     <div class="set-row-header">
       <span class="set-label">Set ${index + 1}</span>
       <button class="remove-set" type="button" data-index="${index}">Remove</button>
     </div>
     <div class="field-grid field-grid-2">
-      <div class="field-group">
-        <label>${primaryLabel}</label>
-        <input type="number" class="set-primary" min="0" placeholder="0">
-      </div>
-      <div class="field-group">
-        <label>Weight (lbs)</label>
-        <input type="number" class="set-weight" min="0" placeholder="0">
-      </div>
+      <label class="field-group">
+        <span>${primaryLabel}</span>
+        <input type="number" class="set-primary" min="0" inputmode="numeric" pattern="[0-9]*" placeholder="0">
+      </label>
+      <label class="field-group">
+        <span>Weight (lbs)</span>
+        <input type="number" class="set-weight" min="0" step="any" inputmode="decimal" placeholder="0">
+      </label>
     </div>
   `;
 
@@ -123,12 +136,12 @@ export function renderHistory(container, entries, exercises) {
       if (set.reps !== undefined) summary += `${set.reps} reps`;
       else if (set.timeSeconds !== undefined) summary += `${set.timeSeconds}s`;
       if (set.weightLbs !== undefined && set.weightLbs > 0) summary += ` • ${set.weightLbs} lbs`;
-      return `<p class="set-summary">${summary}</p>`;
+      return `<p class="set-summary">${esc(summary)}</p>`;
     }).join('');
 
     card.innerHTML = `
-      <h3>${ex ? ex.name : 'Unknown exercise'}</h3>
-      <p class="entry-meta">Date: ${entry.date}, position: ${entry.orderPosition}</p>
+      <h3>${ex ? esc(ex.name) : 'Unknown exercise'}</h3>
+      <p class="entry-meta">Date: ${esc(entry.date)}, position: ${esc(entry.orderPosition)}</p>
       <div class="history-item">${setRows}</div>
     `;
 
@@ -172,7 +185,7 @@ export function renderSummary(container, entries, exercises) {
     const card = document.createElement('div');
     card.className = 'total-card';
 
-    let html = `<h3>${group}</h3>`;
+    let html = `<h3>${esc(group)}</h3>`;
     if (reps > 0) html += `<p>Total reps: ${reps}</p>`;
     if (duration > 0) html += `<p>Total duration: ${duration}s</p>`;
     card.innerHTML = html;
@@ -226,16 +239,16 @@ export function renderDayDetail(container, entries, exercises, date, { onEdit, o
       if (set.reps !== undefined) summary += `${set.reps} reps`;
       else if (set.timeSeconds !== undefined) summary += `${set.timeSeconds}s`;
       if (set.weightLbs !== undefined && set.weightLbs > 0) summary += ` • ${set.weightLbs} lbs`;
-      return `<p class="set-summary">Set ${i + 1}: ${summary}</p>`;
+      return `<p class="set-summary">Set ${i + 1}: ${esc(summary)}</p>`;
     }).join('');
 
     card.innerHTML = `
-      <p class="entry-meta">Position ${entry.orderPosition}</p>
-      <h3>${ex ? ex.name : 'Unknown exercise'}</h3>
+      <p class="entry-meta">Position ${esc(entry.orderPosition)}</p>
+      <h3>${ex ? esc(ex.name) : 'Unknown exercise'}</h3>
       <div class="session-sets">${setRows}</div>
       <div class="card-actions">
-        <button class="secondary edit-entry-btn" data-id="${entry.id}">Edit</button>
-        <button class="danger delete-entry-btn" data-id="${entry.id}">Delete</button>
+        <button class="secondary edit-entry-btn" type="button" data-id="${entry.id}">Edit</button>
+        <button class="danger delete-entry-btn" type="button" data-id="${entry.id}">Delete</button>
       </div>
     `;
 
@@ -277,15 +290,15 @@ export function renderCurrentSession(container, entries, exercises, { onEdit, on
       if (set.reps !== undefined) summary += `${set.reps} reps`;
       else if (set.timeSeconds !== undefined) summary += `${set.timeSeconds}s`;
       if (set.weightLbs !== undefined && set.weightLbs > 0) summary += ` • ${set.weightLbs} lbs`;
-      return `<p class="set-summary">Set ${i + 1}: ${summary}</p>`;
+      return `<p class="set-summary">Set ${i + 1}: ${esc(summary)}</p>`;
     }).join('');
 
     card.innerHTML = `
-      <h3>${ex ? ex.name : 'Unknown exercise'}</h3>
+      <h3>${ex ? esc(ex.name) : 'Unknown exercise'}</h3>
       <div class="session-sets">${setRows}</div>
       <div class="card-actions">
-        <button class="secondary edit-entry-btn" data-id="${entry.id}">Edit</button>
-        <button class="danger delete-entry-btn" data-id="${entry.id}">Delete</button>
+        <button class="secondary edit-entry-btn" type="button" data-id="${entry.id}">Edit</button>
+        <button class="danger delete-entry-btn" type="button" data-id="${entry.id}">Delete</button>
       </div>
     `;
 
@@ -303,9 +316,13 @@ export function renderCurrentSession(container, entries, exercises, { onEdit, on
   container.appendChild(list);
 }
 
+let toastTimer = null;
+
 export function showToast(message) {
   const toast = document.getElementById('toast');
   toast.textContent = message;
   toast.classList.add('visible');
-  setTimeout(() => toast.classList.remove('visible'), 2500);
+  // Restart the timer so an earlier message can't hide this one early.
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => toast.classList.remove('visible'), 2500);
 }

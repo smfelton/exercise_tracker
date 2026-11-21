@@ -328,6 +328,9 @@ button#add-set-button {
   color: white;
   border-radius: 14px;
   opacity: 0;
+  /* Never block taps on the buttons underneath, visible or not. */
+  pointer-events: none;
+  z-index: 200;
   transition: opacity 180ms ease;
 }
 

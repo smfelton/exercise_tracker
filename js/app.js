@@ -1,7 +1,8 @@
 import {
   initDb, getExercises, addExercise, addEntry, updateEntry, deleteEntry,
-  getEntriesForDate, getEntryCountForDate, getRecentEntriesForExercise,
+  getEntriesForDate, getRecentEntriesForExercise,
   getAllEntryDates, getAllEntries, importData,
+  requestPersistentStorage, DuplicateExerciseError,
 } from './db.js';
 import {
   renderExerciseDropdown, renderSets, addSetRow, removeSetRow,
@@ -168,13 +169,29 @@ exportJsonBtn.addEventListener('click', async () => {
     .filter(e => usedNames.has(e.name))
     .map(({ name, group, type }) => ({ name, group, type }));
   const entries = allEntries.map(({ id, ...rest }) => rest);
-  const blob = new Blob([JSON.stringify({ exercises, entries }, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
+  const json = JSON.stringify({ exercises, entries }, null, 2);
+  const filename = `exercise-tracker-${today()}.json`;
+
+  // On iPhone, downloads from a home-screen app are unreliable; the share sheet
+  // lets the file be saved to Files, AirDropped, or emailed.
+  const file = new File([json], filename, { type: 'application/json' });
+  if (navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({ files: [file], title: 'Exercise Tracker backup' });
+      return;
+    } catch (e) {
+      if (e.name === 'AbortError') return; // user closed the share sheet
+      console.warn('Share failed, falling back to download', e);
+    }
+  }
+
+  const url = URL.createObjectURL(file);
   const a = document.createElement('a');
   a.href = url;
-  a.download = `exercise-tracker-${today()}.json`;
+  a.download = filename;
   a.click();
-  URL.revokeObjectURL(url);
+  // Revoke later: Safari may not have started reading the file yet.
+  setTimeout(() => URL.revokeObjectURL(url), 10000);
 });
 
 // ── New exercise ──────────────────────────────────────────────────────────────
@@ -208,6 +225,10 @@ saveExerciseBtn.addEventListener('click', async () => {
 
     showToast('Exercise added.');
   } catch (e) {
+    if (e instanceof DuplicateExerciseError) {
+      showToast(`${e.message}.`);
+      return;
+    }
     showToast('Error saving exercise.');
     console.error(e);
   }
@@ -263,8 +284,7 @@ saveEntryBtn.addEventListener('click', async () => {
   }
 
   try {
-    const orderPosition = (await getEntryCountForDate(date)) + 1;
-    await addEntry({ exerciseName: selectedExercise.name, date, orderPosition, sets });
+    await addEntry({ exerciseName: selectedExercise.name, date, sets });
     renderSets(setsListEl, selectedExercise.type);
     await Promise.all([refreshHistory(), refreshSummary(), refreshCurrentSession()]);
     showToast('Entry saved.');
@@ -397,7 +417,7 @@ confirmDeleteBtn.addEventListener('click', async () => {
   confirmModal.hidden = true;
   try {
     await deleteEntry(id);
-    await Promise.all([refreshSummary(), refreshCurrentSession()]);
+    await Promise.all([refreshSummary(), refreshCurrentSession(), refreshHistory()]);
     if (currentDetailDate) {
       const entries = await getEntriesForDate(currentDetailDate);
       detailEntries = entries;
@@ -416,6 +436,7 @@ confirmDeleteBtn.addEventListener('click', async () => {
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 async function init() {
+  requestPersistentStorage();
   await initDb();
   exercises = await getExercises();
   renderExerciseDropdown(exerciseSelect, exercises);
