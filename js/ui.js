@@ -164,7 +164,8 @@ export function renderSummary(container, entries, exercises) {
   for (const entry of entries) {
     const ex = exerciseMap[entry.exerciseName];
     if (!ex) continue;
-    if (!groupTotals[ex.group]) groupTotals[ex.group] = { reps: 0, duration: 0 };
+    if (!groupTotals[ex.group]) groupTotals[ex.group] = { sets: 0, reps: 0, duration: 0 };
+    groupTotals[ex.group].sets += entry.sets.length;
     for (const set of entry.sets) {
       if (set.reps !== undefined) groupTotals[ex.group].reps += set.reps;
       if (set.timeSeconds !== undefined) groupTotals[ex.group].duration += set.timeSeconds;
@@ -181,11 +182,12 @@ export function renderSummary(container, entries, exercises) {
   list.className = 'totals-list';
 
   for (const group of activeGroups) {
-    const { reps, duration } = groupTotals[group];
+    const { sets, reps, duration } = groupTotals[group];
     const card = document.createElement('div');
     card.className = 'total-card';
 
     let html = `<h3>${esc(group)}</h3>`;
+    html += `<p>Total sets: ${sets}</p>`;
     if (reps > 0) html += `<p>Total reps: ${reps}</p>`;
     if (duration > 0) html += `<p>Total duration: ${duration}s</p>`;
     card.innerHTML = html;
